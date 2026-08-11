@@ -1,10 +1,59 @@
-## AWS Amplify React+Vite Starter Template
+## Lift Station E-02 Rehabilitation Project — Daily Report Search
 
-This repository provides a starter template for creating applications using React+Vite and AWS Amplify, emphasizing easy setup for authentication, API, and database capabilities.
+A React+Vite front end over an AWS Amplify (AppSync + DynamoDB) backend that
+stores the inspector's daily construction reports and lets you search them by
+keyword.
 
-## Overview
+### Data model
 
-This template equips you with a foundational React application integrated with AWS Amplify, streamlined for scalability and performance. It is ideal for developers looking to jumpstart their project with pre-configured AWS services like Cognito, AppSync, and DynamoDB.
+`amplify/data/resource.ts` defines the `Construction` model. Each record is one
+row of `construction-report.xlsx`; attribute names are derived from the
+spreadsheet column headings (e.g. `Daily Progress Description` →
+`dailyProgressDescription`). `date` is stored as an ISO date so records sort
+chronologically.
+
+### Ingesting the spreadsheet
+
+`scripts/data/construction.json` holds the 97 report rows exported from the
+workbook. To load them into the deployed table:
+
+```bash
+npx ampx sandbox --once       # deploy the backend, writes amplify_outputs.json
+node scripts/ingest.mjs       # create one record per row (--wipe to replace)
+node scripts/link-storage.mjs # set storageKey from the actual bucket contents
+```
+
+Both scripts are idempotent: `ingest.mjs` skips rows whose `sourceFile` is
+already present, and `link-storage.mjs` only writes keys that changed.
+
+`link-storage.mjs` matches records to S3 objects by file name (`sourceFile`),
+deliberately **not** by the spreadsheet's `filePath`. `filePath` places the five
+October 2014 reports under an `October 2014` folder, but the documents actually
+live under `November 2014`; matching by name resolves them correctly. The
+resolved key is stored on each record as `storageKey`.
+
+### Storage
+
+`amplify/storage/resource.ts` defines an S3 bucket (`constructionReports`) for
+the report artifacts:
+
+| Prefix     | Contents                              | Guest        | Authenticated       |
+| ---------- | ------------------------------------- | ------------ | ------------------- |
+| `reports/` | source daily report documents (`.doc`) | read         | read, write, delete |
+| `photos/`  | site photos referenced by the reports  | read         | read, write, delete |
+
+Reads are open because the search site itself is public (API key auth); uploads
+and deletes require a signed-in user.
+
+### Search behaviour
+
+The app loads every report and filters in the browser: each whitespace-separated
+keyword must appear somewhere in the record's attributes. Results are listed
+newest first, one element per row, showing all attributes.
+
+Each result header links to that report's source document in S3. Links are
+pre-signed with `getUrl` for one hour and refreshed on a timer, so a tab left
+open keeps working.
 
 ## Features
 
