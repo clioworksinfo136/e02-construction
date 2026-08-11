@@ -7,6 +7,9 @@
  * Requires a deployed backend (amplify_outputs.json in the project root):
  *   npx ampx sandbox --once
  *   node scripts/ingest.mjs [--wipe]
+ *
+ * Pass --outputs <path> (or set AMPLIFY_OUTPUTS) to target another environment,
+ * e.g. outputs generated for a deployed branch.
  */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -17,9 +20,13 @@ import { generateClient } from "aws-amplify/data";
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
 
-const outputs = JSON.parse(
-  readFileSync(join(root, "amplify_outputs.json"), "utf-8")
-);
+const flag = process.argv.indexOf("--outputs");
+const outputsPath =
+  (flag !== -1 ? process.argv[flag + 1] : process.env.AMPLIFY_OUTPUTS) ??
+  join(root, "amplify_outputs.json");
+
+console.log(`Using outputs: ${outputsPath}`);
+const outputs = JSON.parse(readFileSync(outputsPath, "utf-8"));
 Amplify.configure(outputs);
 const client = generateClient({ authMode: "apiKey" });
 

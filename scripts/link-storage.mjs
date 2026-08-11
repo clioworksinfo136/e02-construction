@@ -10,6 +10,9 @@
  * disk (and so in the bucket) they live under "November 2014".
  *
  *   node scripts/link-storage.mjs
+ *
+ * Pass --outputs <path> (or set AMPLIFY_OUTPUTS) to target another environment,
+ * e.g. outputs generated for a deployed branch.
  */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -19,9 +22,14 @@ import { generateClient } from "aws-amplify/data";
 import { list } from "aws-amplify/storage";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-Amplify.configure(
-  JSON.parse(readFileSync(join(root, "amplify_outputs.json"), "utf-8"))
-);
+
+const flag = process.argv.indexOf("--outputs");
+const outputsPath =
+  (flag !== -1 ? process.argv[flag + 1] : process.env.AMPLIFY_OUTPUTS) ??
+  join(root, "amplify_outputs.json");
+
+console.log(`Using outputs: ${outputsPath}`);
+Amplify.configure(JSON.parse(readFileSync(outputsPath, "utf-8")));
 const client = generateClient({ authMode: "apiKey" });
 
 // --- every object under reports/, keyed by lower-cased file name ---
