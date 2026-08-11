@@ -37,13 +37,22 @@ resolved key is stored on each record as `storageKey`.
 `amplify/storage/resource.ts` defines an S3 bucket (`constructionReports`) for
 the report artifacts:
 
-| Prefix     | Contents                              | Guest        | Authenticated       |
-| ---------- | ------------------------------------- | ------------ | ------------------- |
-| `reports/` | source daily report documents (`.doc`) | read         | read, write, delete |
-| `photos/`  | site photos referenced by the reports  | read         | read, write, delete |
+| Prefix                | Contents                               | Guest               | Authenticated       |
+| --------------------- | -------------------------------------- | ------------------- | ------------------- |
+| `reports/`            | source daily report documents (`.doc`)  | read                | read, write, delete |
+| `photos/<recordId>/`  | photos a user attaches to a report      | read, write, delete | read, write, delete |
 
-Reads are open because the search site itself is public (API key auth); uploads
-and deletes require a signed-in user.
+Reads are open because the search site itself is public (API key auth).
+
+> **Guests can write and delete under `photos/`.** That is what makes the photo
+> upload and delete buttons work without a login, but it also means anyone who
+> can reach the site can add or remove photos. To lock this down, put the app
+> behind Cognito (`@aws-amplify/ui-react`'s `Authenticator`) and drop the
+> `write`/`delete` grants from `allow.guest` in `amplify/storage/resource.ts`.
+
+Photos are keyed by record id, so no schema change is needed to associate them:
+the app does one `list({ path: "photos/" })` on load and groups by the id
+segment.
 
 ### Search behaviour
 
@@ -54,6 +63,14 @@ newest first, one element per row, showing all attributes.
 Each result header links to that report's source document in S3. Links are
 pre-signed with `getUrl` for one hour and refreshed on a timer, so a tab left
 open keeps working.
+
+### Photos
+
+A **Photo Upload** button sits beside each result's title and accepts multiple
+images at once. Uploaded photos appear as thumbnails at the end of that result;
+clicking one opens a full-size carousel with Backward / Forward / Delete /
+Cancel, plus arrow-key and Escape support. Delete asks for confirmation, then
+removes the object from S3. Deleting the last photo closes the carousel.
 
 ## Features
 
