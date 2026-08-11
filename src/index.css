@@ -38,12 +38,68 @@ body {
 /* Search bar */
 .search {
   display: flex;
+  flex-direction: column;
   gap: 8px;
   position: sticky;
   top: 0;
   padding: 12px 0;
   background: #eef1f6;
   z-index: 1;
+}
+
+.search-row {
+  display: flex;
+  gap: 8px;
+}
+
+.search-row.dates {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.date-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.date-field input {
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+}
+
+.date-field input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.date-hint {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.clear-button {
+  margin-left: auto;
+  padding: 7px 14px;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--muted);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.clear-button:hover {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .search-input {
